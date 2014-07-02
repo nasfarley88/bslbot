@@ -31,9 +31,9 @@ api = tweepy.API(auth)
 
 def printOrTweet(x):
     """Simple function that currently prints, but will tweet."""
-    print x
+    # print x
     print "You have entered the printOrTweet zone."
-    # api.update_status(x)
+    api.update_status(x)
 
 def tweetRandomWord():
     # TODO sort it so that 'Random' actually means 'random selection from tweets that haven't been tweeted yet'
