@@ -31,9 +31,9 @@ api = tweepy.API(auth)
 
 def printOrTweet(x):
     """Simple function that currently prints, but will tweet."""
-    # print x
+    print x
     print "You have entered the printOrTweet zone."
-    api.update_status(x)
+    # api.update_status(x)
 
 def tweetRandomWord():
     # TODO sort it so that 'Random' actually means 'random selection from tweets that haven't been tweeted yet'
@@ -59,11 +59,32 @@ def tweetAbout(category):
     E.g. If all but 10 tweets in a category have been tweeted once, and 10 have
     never been tweeted, this function will only choose from those 10."""
 
-    chosen_tweet = random.choice(config['tweets'][category].keys())
+
+    # This little code block is bslbot's method for not tweeting the same thing
+    # all the time. In fact, bslbot never tweets the same thing twice (once a
+    # category is chosen) until he doesn't have a choice.
+    lowest_no_of_times_tweeted = 9001
+    candidates_for_tweeting = []
+    for i in config['tweets'][category].keys():
+        # if this tweet has the lowest no_of_times_tweeted so far dump the
+        # rest of them and start the list with this one
+        if config['tweets'][category][i]['no_of_times_tweeted'] < lowest_no_of_times_tweeted:
+            print 'dumping candidates'
+            lowest_no_of_times_tweeted = config['tweets'][category][i]['no_of_times_tweeted']
+            print 'lowest times is ', lowest_no_of_times_tweeted
+            candidates_for_tweeting = [ i ]
+        # otherwise if it's equally untweeted, carry on and add this one to
+        # the list
+        elif config['tweets'][category][i]['no_of_times_tweeted'] == lowest_no_of_times_tweeted:
+            candidates_for_tweeting.append(i)
+        # else: rejected (do nothing)
+
+
+    chosen_tweet = random.choice(candidates_for_tweeting)
     tmptweet = config['tweets'][category][chosen_tweet]['tweet']
     try:
         tmptweet = tmptweet + "\n" + config['tweets'][category][chosen_tweet]['link']
-    except NameError:
+    except KeyError:
         print "No link for this one!"
     
     config['tweets'][category][chosen_tweet]['no_of_times_tweeted'] +=1
@@ -104,4 +125,4 @@ def tweet(text=None, delay=0):
 
 if __name__ == "__main__":
     print "Starting bslbot..."
-    tweet(delay=random.randint(1,3400))
+    tweet(delay=random.randint(1,1))
