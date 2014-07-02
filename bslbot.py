@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
 
 
 # I used these to generate my first config file. Might be useful in the future
@@ -30,13 +30,13 @@ auth.set_access_token(config['authentication']['access_key'], config['authentica
 api = tweepy.API(auth)
 
 def printOrTweet(x):
-    """Simple functiont that currently prints, but will tweet."""
+    """Simple function that currently prints, but will tweet."""
     # print x
     print "You have entered the printOrTweet zone."
     api.update_status(x)
 
 def tweetRandomWord():
-    # TODO sort it so that 'Random' acutally means 'random selection from tweets that haven't been tweeted yet'
+    # TODO sort it so that 'Random' actually means 'random selection from tweets that haven't been tweeted yet'
     import random
     """This function tweets a pseudo random word in BSL."""
     # Dictionary of all words we can possibly tweet about
@@ -103,5 +103,5 @@ def tweet(text=None, delay=0):
 
 
 if __name__ == "__main__":
-    print "Starting bslbot…"
-    tweet(delay=random.randint(1,2))
+    print "Starting bslbot..."
+    tweet(delay=random.randint(1,3400))
