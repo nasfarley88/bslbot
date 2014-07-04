@@ -23,7 +23,7 @@ import os
 import random
 from configobj import ConfigObj
 
-config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
+# config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
 
 auth = tweepy.OAuthHandler(config['authentication']['consumer_key'], config['authentication']['consumer_secret'])
 auth.set_access_token(config['authentication']['access_key'], config['authentication']['access_secret'])
@@ -58,6 +58,12 @@ def tweetAbout(category):
 
     E.g. If all but 10 tweets in a category have been tweeted once, and 10 have
     never been tweeted, this function will only choose from those 10."""
+
+    # Check if the config is loaded. If not, load it.
+    try:
+        config
+    except NameError:
+        config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
 
 
     # This little code block is bslbot's method for not tweeting the same thing
@@ -118,6 +124,12 @@ def tweet(text=None, delay=0):
 
     import time
     time.sleep(delay)
+
+    # Check if the config is loaded yet. If not, load it.
+    try:
+        config
+    except NameError:
+        config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
     
     if text==None:
         printOrTweet(_whatShouldITweetAbout())
