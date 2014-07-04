@@ -65,6 +65,7 @@ def tweetAbout(category):
     E.g. If all but 10 tweets in a category have been tweeted once, and 10 have
     never been tweeted, this function will only choose from those 10."""
 
+    global config
 
     # This little code block is bslbot's method for not tweeting the same thing
     # all the time. In fact, bslbot never tweets the same thing twice (once a
