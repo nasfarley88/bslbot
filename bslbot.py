@@ -31,9 +31,15 @@ api = tweepy.API(auth)
 
 def printOrTweet(x):
     """Simple function that currently prints, but will tweet."""
-    print x
+    global config
+
     print "You have entered the printOrTweet zone."
-    # api.update_status(x)
+    if config['misc']['printortweet'] == 'print':
+        print x
+    elif config['misc']['printortweet'] == 'tweet':
+        api.update_status(x)
+    else:
+        print "I don't know whether to tweet or print."
 
 def tweetRandomWord():
     # TODO sort it so that 'Random' actually means 'random selection from tweets that haven't been tweeted yet'
