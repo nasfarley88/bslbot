@@ -125,4 +125,4 @@ def tweet(text=None, delay=0):
 
 if __name__ == "__main__":
     print "Starting bslbot..."
-    tweet(delay=random.randint(1,1))
+    tweet(delay=random.randint(1,config['misc']['max_delay']))
