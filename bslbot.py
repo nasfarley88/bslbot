@@ -82,10 +82,12 @@ def tweetAbout(category):
 
     chosen_tweet = random.choice(candidates_for_tweeting)
     tmptweet = config['tweets'][category][chosen_tweet]['tweet']
+    # If there is a link, try and add it to the tweet along with the
+    # signature. If not, just add the signature
     try:
-        tmptweet = tmptweet + "\n" + config['tweets'][category][chosen_tweet]['link']
+        tmptweet = tmptweet + "\n" + config['tweets'][category][chosen_tweet]['link'] + " " + config['misc']['signature']
     except KeyError:
-        print "No link for this one!"
+        tmptweet = tmptweet + " " + config['misc']['signature']
     
     config['tweets'][category][chosen_tweet]['no_of_times_tweeted'] +=1
     config.write()
