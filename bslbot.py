@@ -9,10 +9,24 @@ def urlify(s):
     s = re.sub(r"\s+", '-', s)
     return s
 
-#for i in all_my_videos:
-#    tmpkey = urlify(i['name']).lower()
-#    tmptweet = 'How to sign ' + re.sub(r" \(.*\)", r"", i['name']) + ' in #BSL'
+# for i in all_my_videos:
 
+#     tmpkey = urlify(i['name']).lower()
+#     tmptweet = 'How to sign ' + re.sub(r" \(.*\)",
+#                                        r"",
+#                                        i['name']).lower() + ' in #BSL'
+#     tmplink = i['link']
+    
+#     try:
+#         config['tweets']['words'][tmpkey]
+#     except KeyError:
+#         print tmpkey
+#         print tmptweet
+#         print tmplink
+#         config['tweets']['words'][tmpkey] = {}
+#         config['tweets']['words'][tmpkey]['tweet'] = tmptweet
+#         config['tweets']['words'][tmpkey]['link'] = tmplink
+#         config['tweets']['words'][tmpkey]['no_of_times_tweeted'] = 0
 
 ## real code starts here
 
