@@ -126,7 +126,7 @@ def _whatShouldITweetAbout():
     
     if free_will <0.005:
         return tweetAbout('selfpromotion')
-    elif free_will <0.2:
+    elif free_will <0.1:
         return tweetAbout('advice')
     else:
         return tweetAbout('words')
