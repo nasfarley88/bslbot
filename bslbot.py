@@ -154,6 +154,23 @@ def tweet(text=None, delay=0):
         printOrTweet(text)
 
 
+def follow_back():
+    """Simple function to follow back people on twitter.
+
+    Taken shamelessly from http://stackoverflow.com/questions/20894511/create-an-auto-follow-back-script-in-tweepy.
+    """
+    followers=[api.followers()]
+    following=[api.friends()]
+    for follower in followers:
+        if(follower in following):            
+            print('did nothing for one person')
+        else:
+            api.create_friendship(follower)
+            print('followed one person')
+
+
 if __name__ == "__main__":
     print "Starting bslbot..."
     tweet(delay=random.randint(1,config['misc']['max_delay']))
+    time.sleep(10)
+    follow_back()
