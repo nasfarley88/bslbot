@@ -157,16 +157,11 @@ def tweet(text=None, delay=0):
 def follow_back():
     """Simple function to follow back people on twitter.
 
-    Taken shamelessly from http://stackoverflow.com/questions/20894511/create-an-auto-follow-back-script-in-tweepy.
+    Taken shamelessly from http://www.dototot.com/write-twitter-bot-python-tweepy-follow-new-followers/
     """
-    followers=[api.followers()]
-    following=[api.friends()]
-    for follower in followers:
-        if(follower in following):            
-            print('did nothing for one person')
-        else:
-            api.create_friendship(follower)
-            print('followed one person')
+    for follower in tweepy.Cursor(api.followers).items():
+        follower.follow()
+        print follower.screen_name
 
 
 if __name__ == "__main__":
