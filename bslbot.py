@@ -1,5 +1,30 @@
 #!/usr/bin/env python
 
+# TODO
+#
+# I'm going to train bslbot to use gsheets instead of a config file.
+# To do this I am going to use code like 
+
+# import gspread
+
+# gc = gspread.login( #username and password )
+
+# wks = gc.open('bslbot\'s brain')
+
+
+# print wks.worksheet("BSLDictionary")
+# print wks.worksheet('BSLDictionary').get_all_values()  
+
+# print wks.worksheet("BSLDictionary").range("A1:C3")
+#
+# And then use the len() of .get_all_values() to find a range to give a random
+# number generator. The logic will then operate largely as it does now, but
+# without dictionaries. Possible logic includes a pseudo-dictionary by mapping
+# spreadsheet column headings to indexes automatically. Something like
+
+# tweet_cell = wks.worksheet("BSLDictionary").find("Tweet")
+# tweet_index = tweet_cell.col
+
 
 
 # I used these to generate my first config file. Might be useful in the future
@@ -69,6 +94,80 @@ def tweetRandomWord():
     printOrTweet(tweet + "\n" + link)
 
 
+def tweetAboutFromSpreadsheet():
+    """Function to tweet a random tweet from the spreadsheet."""
+
+    global config
+    
+    import gspread
+    gc = gspread.login(config['gspread']['username'], config['gspread']['password'])
+
+    wks = gc.open('bslbot\'s brain')
+
+    # Get all the values as a list
+    sheet_list = wks.worksheet('BSLDictionary').get_all_values()
+
+    # Remove the title
+    #
+    # TODO replace this with finding which column corresponds to which thing
+    # (tweet, link, etc.)
+    sheet_list.pop(0)
+
+    lowest_no_of_times_tweeted = 9001
+    candidates_for_tweeting = []
+    for i in sheet_list:
+        no_of_times_tweeted = int(i[4])
+        print candidates_for_tweeting
+        if no_of_times_tweeted < lowest_no_of_times_tweeted:
+            # if this tweet has the lowest no_of_times_tweeted so far dump the
+            # rest of them and start the list with this one
+            print 'dumping candidates'
+            lowest_no_of_times_tweeted = no_of_times_tweeted
+            candidates_for_tweeting = [ i ]
+        elif no_of_times_tweeted == lowest_no_of_times_tweeted:
+            # otherwise if it's equally untweeted, carry on and add this one to
+            # the list
+            candidates_for_tweeting.append(i)
+        # else: do nothing
+
+    chosen_tweet = random.choice(candidates_for_tweeting)
+
+    # The original function has some complex logic here to make sure that it
+    # tweets things int he correct order. The new logic does not require this
+    # (yet) as it is only for BSLDictionary entries
+
+    # Find the cell that holds the chosen tweet
+    cell_for_chosen_tweet = wks.worksheet('BSLDictionary').find(chosen_tweet[2])
+    print cell_for_chosen_tweet
+    print cell_for_chosen_tweet.value
+
+    tweet_to_return = chosen_tweet[2] + " "\
+                      + config['misc']['signature'] + "\n" + chosen_tweet[3]
+
+    # Mark the chosen tweet as tweeted one more time
+    # TODO get rid of magic number 4
+    print wks.worksheet('BSLDictionary').cell(cell_for_chosen_tweet.row, 5)
+    print wks.worksheet('BSLDictionary').cell(cell_for_chosen_tweet.row, 5).value
+    current_no_of_times_tweeeted = int(
+        wks.worksheet('BSLDictionary').cell(
+            cell_for_chosen_tweet.row,
+            5
+        ).value
+    )
+
+    wks.worksheet('BSLDictionary').update_cell(
+        cell_for_chosen_tweet.row,
+        5,
+        current_no_of_times_tweeeted + 1)
+    
+
+    return tweet_to_return
+            
+
+    
+
+    
+    
 def tweetAbout(category):
     """Function to choose a semi-random tweet from a predefined list.
 
@@ -81,6 +180,10 @@ def tweetAbout(category):
 
     global config
 
+    if category == 'words':
+        # TODO make tweetAboutFromSpreadsheet the main tweetAbout function
+        return tweetAboutFromSpreadsheet()
+    
     # This little code block is bslbot's method for not tweeting the same thing
     # all the time. In fact, bslbot never tweets the same thing twice (once a
     # category is chosen) until he doesn't have a choice.
