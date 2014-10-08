@@ -94,7 +94,7 @@ def tweetRandomWord():
     printOrTweet(tweet + "\n" + link)
 
 
-def tweetAboutFromSpreadsheet():
+def tweetAboutFromSpreadsheet(category='BSLDictionary'):
     """Function to tweet a random tweet from the spreadsheet."""
 
     global config
@@ -102,21 +102,34 @@ def tweetAboutFromSpreadsheet():
     import gspread
     gc = gspread.login(config['gspread']['username'], config['gspread']['password'])
 
-    wks = gc.open('bslbot\'s brain')
+    sheet = gc.open('bslbot\'s brain')
+
+    wks = sheet.worksheet(category)
 
     # Get all the values as a list
-    sheet_list = wks.worksheet('BSLDictionary').get_all_values()
+    wks_list = wks.get_all_values()
 
     # Remove the title
     #
     # TODO replace this with finding which column corresponds to which thing
     # (tweet, link, etc.)
-    sheet_list.pop(0)
 
+    # Fetch the important column indicies
+    tweet_cell_col = wks.find("Tweet").col
+    uri_cell_col = wks.find("URI").col
+    link_cell_col = wks.find("Link").col
+    no_of_times_tweeted_cell_col = wks.find("No of times tweeted").col
+
+    # Remove the titles from the list of cells
+    wks_list.pop(0)
+
+    # Set an arbitrary high number of times tweeted
     lowest_no_of_times_tweeted = 9001
     candidates_for_tweeting = []
-    for i in sheet_list:
-        no_of_times_tweeted = int(i[4])
+    for i in wks_list:
+        # -1 in the next line because python counts from 0, spreadsheets count
+        # from 1
+        no_of_times_tweeted = int(i[no_of_times_tweeted_cell_col-1])
         print candidates_for_tweeting
         if no_of_times_tweeted < lowest_no_of_times_tweeted:
             # if this tweet has the lowest no_of_times_tweeted so far dump the
@@ -137,28 +150,26 @@ def tweetAboutFromSpreadsheet():
     # (yet) as it is only for BSLDictionary entries
 
     # Find the cell that holds the chosen tweet
-    cell_for_chosen_tweet = wks.worksheet('BSLDictionary').find(chosen_tweet[2])
+    cell_for_chosen_tweet = wks.find(chosen_tweet[tweet_cell_col-1])
     print cell_for_chosen_tweet
     print cell_for_chosen_tweet.value
 
-    tweet_to_return = chosen_tweet[2] + " "\
-                      + config['misc']['signature'] + "\n" + chosen_tweet[3]
+    tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
+                      + " "\
+                      + config['misc']['signature']\
+                      + "\n"\
+                      + wks.cell(cell_for_chosen_tweet.row, link_cell_col).value
 
     # Mark the chosen tweet as tweeted one more time
-    # TODO get rid of magic number 4
-    print wks.worksheet('BSLDictionary').cell(cell_for_chosen_tweet.row, 5)
-    print wks.worksheet('BSLDictionary').cell(cell_for_chosen_tweet.row, 5).value
-    current_no_of_times_tweeeted = int(
-        wks.worksheet('BSLDictionary').cell(
-            cell_for_chosen_tweet.row,
-            5
-        ).value
-    )
+    print wks.cell(cell_for_chosen_tweet.row, 5)
+    print wks.cell(cell_for_chosen_tweet.row, 5).value
+    current_no_of_times_tweeeted = int( wks.cell( cell_for_chosen_tweet.row,
+                                                  no_of_times_tweeted_cell_col ).value )
 
-    wks.worksheet('BSLDictionary').update_cell(
-        cell_for_chosen_tweet.row,
-        5,
-        current_no_of_times_tweeeted + 1)
+    # Update the number of times tweeted
+    wks.update_cell( cell_for_chosen_tweet.row,
+                     no_of_times_tweeted_cell_col,
+                     current_no_of_times_tweeeted + 1)
     
 
     return tweet_to_return
