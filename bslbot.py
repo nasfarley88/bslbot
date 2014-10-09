@@ -94,9 +94,10 @@ def tweetRandomWord():
     printOrTweet(tweet + "\n" + link)
 
 
-def tweetAboutFromSpreadsheet(category='BSLDictionary'):
+def tweetAboutFromSpreadsheet(category):
     """Function to tweet a random tweet from the spreadsheet."""
 
+    # Use the global config variable
     global config
     
     import gspread
@@ -116,9 +117,14 @@ def tweetAboutFromSpreadsheet(category='BSLDictionary'):
 
     # Fetch the important column indicies
     tweet_cell_col = wks.find("Tweet").col
-    uri_cell_col = wks.find("URI").col
-    link_cell_col = wks.find("Link").col
     no_of_times_tweeted_cell_col = wks.find("No of times tweeted").col
+
+    # Try to find a link column, but if you don't, don't sweat it.
+    try:
+        link_cell_col = wks.find("Link").col
+    except gspread.exceptions.CellNotFound:
+        pass
+
 
     # Remove the titles from the list of cells
     wks_list.pop(0)
@@ -130,7 +136,6 @@ def tweetAboutFromSpreadsheet(category='BSLDictionary'):
         # -1 in the next line because python counts from 0, spreadsheets count
         # from 1
         no_of_times_tweeted = int(i[no_of_times_tweeted_cell_col-1])
-        print candidates_for_tweeting
         if no_of_times_tweeted < lowest_no_of_times_tweeted:
             # if this tweet has the lowest no_of_times_tweeted so far dump the
             # rest of them and start the list with this one
@@ -154,11 +159,18 @@ def tweetAboutFromSpreadsheet(category='BSLDictionary'):
     print cell_for_chosen_tweet
     print cell_for_chosen_tweet.value
 
-    tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
-                      + " "\
-                      + config['misc']['signature']\
-                      + "\n"\
-                      + wks.cell(cell_for_chosen_tweet.row, link_cell_col).value
+    # If there is a link defined, use it. 
+    if 'link_cell_col' in locals():
+        tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
+                          + " "\
+                          + config['misc']['signature']\
+                          + "\n"\
+                          + wks.cell(cell_for_chosen_tweet.row, link_cell_col).value
+    else:
+        tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
+                          + " "\
+                          + config['misc']['signature']\
+                
 
     # Mark the chosen tweet as tweeted one more time
     print wks.cell(cell_for_chosen_tweet.row, 5)
@@ -238,12 +250,12 @@ def _whatShouldITweetAbout():
 
     free_will =  random.random()
     
-    if free_will <0.005:
-        return tweetAbout('selfpromotion')
+    if free_will <0.01:
+        return tweetAboutFromSpreadsheet('SelfPromotion')
     elif free_will <0.1:
-        return tweetAbout('advice')
+        return tweetAboutFromSpreadsheet('Advice')
     else:
-        return tweetAbout('words')
+        return tweetAboutFromSpreadsheet('BSLDictionary')
     
 
 def tweet(text=None, delay=0):
