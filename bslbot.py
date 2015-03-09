@@ -1,60 +1,5 @@
 #!/usr/bin/env python
 
-# TODO
-#
-# I'm going to train bslbot to use gsheets instead of a config file.
-# To do this I am going to use code like 
-
-# import gspread
-
-# gc = gspread.login( #username and password )
-
-# wks = gc.open('bslbot\'s brain')
-
-
-# print wks.worksheet("BSLDictionary")
-# print wks.worksheet('BSLDictionary').get_all_values()  
-
-# print wks.worksheet("BSLDictionary").range("A1:C3")
-#
-# And then use the len() of .get_all_values() to find a range to give a random
-# number generator. The logic will then operate largely as it does now, but
-# without dictionaries. Possible logic includes a pseudo-dictionary by mapping
-# spreadsheet column headings to indexes automatically. Something like
-
-# tweet_cell = wks.worksheet("BSLDictionary").find("Tweet")
-# tweet_index = tweet_cell.col
-
-
-
-# I used these to generate my first config file. Might be useful in the future
-
-def urlify(s):
-    s = re.sub(r"[^\w\s]", '', s)
-    s = re.sub(r"\s+", '-', s)
-    return s
-
-# for i in all_my_videos:
-
-#     tmpkey = urlify(i['name']).lower()
-#     tmptweet = 'How to sign ' + re.sub(r" \(.*\)",
-#                                        r"",
-#                                        i['name']).lower() + ' in #BSL'
-#     tmplink = i['link']
-    
-#     try:
-#         config['tweets']['words'][tmpkey]
-#     except KeyError:
-#         print tmpkey
-#         print tmptweet
-#         print tmplink
-#         config['tweets']['words'][tmpkey] = {}
-#         config['tweets']['words'][tmpkey]['tweet'] = tmptweet
-#         config['tweets']['words'][tmpkey]['link'] = tmplink
-#         config['tweets']['words'][tmpkey]['no_of_times_tweeted'] = 0
-
-## real code starts here
-
 import tweepy
 import time
 import sys
@@ -294,4 +239,4 @@ if __name__ == "__main__":
     print "Starting bslbot..."
     tweet(delay=random.randint(1,config['misc']['max_delay']))
     time.sleep(10)
-    follow_back()
+    #follow_back()
