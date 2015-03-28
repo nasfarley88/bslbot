@@ -9,15 +9,19 @@ from configobj import ConfigObj
 
 config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
 
-auth = tweepy.OAuthHandler(config['authentication']['consumer_key'], config['authentication']['consumer_secret'])
-auth.set_access_token(config['authentication']['access_key'], config['authentication']['access_secret'])
+auth = tweepy.OAuthHandler(
+    config['authentication']['consumer_key'],
+    config['authentication']['consumer_secret'])
+auth.set_access_token(
+    config['authentication']['access_key'],
+    config['authentication']['access_secret'])
 api = tweepy.API(auth)
 
-def printOrTweet(x):
-    """Simple function that currently prints, but will tweet."""
+def print_or_tweet(x):
+    """Simple function that prints or tweets based on the config file."""
     global config
 
-    print "You have entered the printOrTweet zone."
+    print "You have entered the print_or_tweet zone."
     if config['misc']['printortweet'] == 'print':
         print x
     elif config['misc']['printortweet'] == 'tweet':
@@ -25,22 +29,22 @@ def printOrTweet(x):
     else:
         print "I don't know whether to tweet or print."
 
-def tweetRandomWord():
-    # TODO sort it so that 'Random' actually means 'random selection from tweets that haven't been tweeted yet'
-    import random
-    """This function tweets a pseudo random word in BSL."""
-    # Dictionary of all words we can possibly tweet about
-    all_words = config['Tweets']['Words'] 
+def tweet_about_from_ss(category):
+    """Function to tweet a random tweet from the spreadsheet.
 
-    # Choose one of the words
-    word = all_words[random.choice(all_words.keys())]
-    tweet = word['tweet']
-    link = word['link']
-    printOrTweet(tweet + "\n" + link)
+    The previous version of this function had the following docstring:
 
+    Function to choose a semi-random tweet from a predefined list.
 
-def tweetAboutFromSpreadsheet(category):
-    """Function to tweet a random tweet from the spreadsheet."""
+    This function looks at all the tweets in a category and then
+    chooses one that has not been used in a while. Specifically, it
+    chooses tweets which have been tweeted the least.
+
+    E.g. If all but 10 tweets in a category have been tweeted once,
+    and 10 have never been tweeted, this function will only choose
+    from those 10.
+
+    """
 
     # Use the global config variable
     global config
@@ -131,63 +135,7 @@ def tweetAboutFromSpreadsheet(category):
 
     return tweet_to_return
             
-
-    
-
-    
-    
-def tweetAbout(category):
-    """Function to choose a semi-random tweet from a predefined list.
-
-    This function looks at all the tweets in a category and then chooses one
-    that has not been used in a while. Specifically, it chooses tweets which
-    have been tweeted the least.
-
-    E.g. If all but 10 tweets in a category have been tweeted once, and 10 have
-    never been tweeted, this function will only choose from those 10."""
-
-    global config
-
-    if category == 'words':
-        # TODO make tweetAboutFromSpreadsheet the main tweetAbout function
-        return tweetAboutFromSpreadsheet()
-    
-    # This little code block is bslbot's method for not tweeting the same thing
-    # all the time. In fact, bslbot never tweets the same thing twice (once a
-    # category is chosen) until he doesn't have a choice.
-    lowest_no_of_times_tweeted = 9001
-    candidates_for_tweeting = []
-    for i in config['tweets'][category].keys():
-        # if this tweet has the lowest no_of_times_tweeted so far dump the
-        # rest of them and start the list with this one
-        if config['tweets'][category][i]['no_of_times_tweeted'] < lowest_no_of_times_tweeted:
-            print 'dumping candidates'
-            lowest_no_of_times_tweeted = config['tweets'][category][i]['no_of_times_tweeted']
-            print 'lowest times is ', lowest_no_of_times_tweeted
-            candidates_for_tweeting = [ i ]
-        # otherwise if it's equally untweeted, carry on and add this one to
-        # the list
-        elif config['tweets'][category][i]['no_of_times_tweeted'] == lowest_no_of_times_tweeted:
-            candidates_for_tweeting.append(i)
-        # else: rejected (do nothing)
-
-
-    chosen_tweet = random.choice(candidates_for_tweeting)
-    tmptweet = config['tweets'][category][chosen_tweet]['tweet']
-    # If there is a link, try and add it to the tweet along with the
-    # signature. If not, just add the signature
-    try:
-        tmptweet = tmptweet + "\n" + config['tweets'][category][chosen_tweet]['link'] + " " + config['misc']['signature']
-    except KeyError:
-        tmptweet = tmptweet + " " + config['misc']['signature']
-    
-    config['tweets'][category][chosen_tweet]['no_of_times_tweeted'] +=1
-    config.write()
-    
-    return tmptweet
-    
-
-def _whatShouldITweetAbout():
+def _what_should_I_tweet_about():
 
     """Internal function allowing bslbot to decide what to tweet about.
 
@@ -196,11 +144,11 @@ def _whatShouldITweetAbout():
     free_will =  random.random()
     
     if free_will <0.01:
-        return tweetAboutFromSpreadsheet('SelfPromotion')
+        return tweet_about_from_ss('SelfPromotion')
     elif free_will <0.1:
-        return tweetAboutFromSpreadsheet('Advice')
+        return tweet_about_from_ss('Advice')
     else:
-        return tweetAboutFromSpreadsheet('BSLDictionary')
+        return tweet_about_from_ss('BSLDictionary')
     
 
 def tweet(text=None, delay=0):
@@ -220,9 +168,9 @@ def tweet(text=None, delay=0):
 
     
     if text==None:
-        printOrTweet(_whatShouldITweetAbout())
+        print_or_tweet(_what_should_I_tweet_about())
     else:
-        printOrTweet(text)
+        print_or_tweet(text)
 
 
 def follow_back():
