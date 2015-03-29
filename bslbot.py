@@ -17,15 +17,18 @@ auth.set_access_token(
     config['authentication']['access_secret'])
 api = tweepy.API(auth)
 
-def print_or_tweet(x):
+def print_or_tweet(x, media=None):
     """Simple function that prints or tweets based on the config file."""
     global config
 
     print "You have entered the print_or_tweet zone."
     if config['misc']['printortweet'] == 'print':
-        print x
+        print x, media
     elif config['misc']['printortweet'] == 'tweet':
-        api.update_status(x)
+        if media:
+            api.update_with_media(media, x)
+        else:
+            api.update_status(x)
     else:
         print "I don't know whether to tweet or print."
 
