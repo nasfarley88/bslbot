@@ -21,11 +21,13 @@ def print_or_tweet((x, media)):
     """Simple function that prints or tweets based on the config file."""
     global config
 
+    media = os.path.expanduser('~/bsl_gifs/'+media)
+
     print "You have entered the print_or_tweet zone."
     if config['misc']['printortweet'] == 'print':
         print x, media
     elif config['misc']['printortweet'] == 'tweet':
-        if os.path.isfile(os.path.expanduser('~/bsl_gifs/'+media)):
+        if os.path.isfile(os.path.expanduser(media)):
             api.update_with_media(media, x)
         else:
             api.update_status(x)
