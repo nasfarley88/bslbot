@@ -28,9 +28,9 @@ def print_or_tweet((x, media)):
         print x, media
     elif config['misc']['printortweet'] == 'tweet':
         if os.path.isfile(os.path.expanduser(media)):
-            api.update_with_media(media, x)
+            api.update_with_media(filename=media, status=x)
         else:
-            api.update_status(x)
+            api.update_status(status=x)
     else:
         print "I don't know whether to tweet or print."
 
