@@ -17,7 +17,7 @@ auth.set_access_token(
     config['authentication']['access_secret'])
 api = tweepy.API(auth)
 
-def print_or_tweet(x, media=None):
+def print_or_tweet((x, media)):
     """Simple function that prints or tweets based on the config file."""
     global config
 
@@ -25,7 +25,7 @@ def print_or_tweet(x, media=None):
     if config['misc']['printortweet'] == 'print':
         print x, media
     elif config['misc']['printortweet'] == 'tweet':
-        if media:
+        if os.path.isfile(os.path.expanduser('~/bsl_gifs/'+media)):
             api.update_with_media(media, x)
         else:
             api.update_status(x)
@@ -76,6 +76,11 @@ def tweet_about_from_ss(category):
         link_cell_col = wks.find("Link").col
     except gspread.exceptions.CellNotFound:
         pass
+
+    try:
+        media_cell_col = wks.find("Media").col
+    except:
+        media_cell_col = None
 
 
     # Remove the titles from the list of cells
@@ -136,7 +141,7 @@ def tweet_about_from_ss(category):
                      current_no_of_times_tweeeted + 1)
     
 
-    return tweet_to_return
+    return (tweet_to_return, wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
             
 def _what_should_I_tweet_about():
 
@@ -173,7 +178,7 @@ def tweet(text=None, delay=0):
     if text==None:
         print_or_tweet(_what_should_I_tweet_about())
     else:
-        print_or_tweet(text)
+        print_or_tweet((text, None))
 
 
 def follow_back():
