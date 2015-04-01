@@ -21,7 +21,13 @@ def print_or_tweet((x, media)):
     """Simple function that prints or tweets based on the config file."""
     global config
 
-    media = os.path.expanduser('~/bsl_gifs/'+media)
+    # TODO: Make this so that it has some form of error checking
+    try:
+        call('scp nasfarley88@nathanda.co.uk:~/Dropbox/vimeo_drop/gifs/'+media+' ~/tmp/')
+    except:
+        pass
+
+    media = os.path.expanduser('~/tmp/'+media)
 
     print "You have entered the print_or_tweet zone."
     if config['misc']['printortweet'] == 'print':
@@ -33,6 +39,12 @@ def print_or_tweet((x, media)):
             api.update_status(status=x)
     else:
         print "I don't know whether to tweet or print."
+
+    # TODO: make some form of error checking here
+    try:
+        call('rm '+media)
+    except:
+        pass
 
 def tweet_about_from_ss(category):
     """Function to tweet a random tweet from the spreadsheet.
