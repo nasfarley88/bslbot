@@ -6,6 +6,7 @@ import sys
 import os
 import random
 from configobj import ConfigObj
+from subprocess import call
 
 config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
 
@@ -38,11 +39,7 @@ def print_or_tweet((x, media)):
     else:
         print "I don't know whether to tweet or print."
 
-    # TODO: make some form of error checking here
-    try:
-        call('rm '+media, shell=True)
-    except:
-        pass
+    call('rm '+media, shell=True)
 
 def tweet_about_from_ss(category):
     """Function to tweet a random tweet from the spreadsheet.
