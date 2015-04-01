@@ -21,11 +21,9 @@ def print_or_tweet((x, media)):
     """Simple function that prints or tweets based on the config file."""
     global config
 
-    # TODO: Make this so that it has some form of error checking
-    try:
-        call('scp nasfarley88@nathanda.co.uk:~/Dropbox/vimeo_drop/gifs/'+media+' ~/tmp/')
-    except:
-        pass
+    print "Attempting to fetch", media
+
+    call('scp nasfarley88@nathanda.co.uk:Dropbox/vimeo_drop/gifs/'+media+' ~/tmp/', shell=True)
 
     media = os.path.expanduser('~/tmp/'+media)
 
@@ -42,7 +40,7 @@ def print_or_tweet((x, media)):
 
     # TODO: make some form of error checking here
     try:
-        call('rm '+media)
+        call('rm '+media, shell=True)
     except:
         pass
 
