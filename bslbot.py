@@ -138,7 +138,7 @@ def tweet_about_from_ss(category):
                           + config['misc']['signature']\
                 
 
-    # Mark the chosen tweet as tweeted one more time
+    # Mark the chosen tweet as tweeted onea more time
     print wks.cell(cell_for_chosen_tweet.row, 5)
     print wks.cell(cell_for_chosen_tweet.row, 5).value
     current_no_of_times_tweeeted = int( wks.cell( cell_for_chosen_tweet.row,
@@ -150,7 +150,10 @@ def tweet_about_from_ss(category):
                      current_no_of_times_tweeeted + 1)
     
 
-    return (tweet_to_return, wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
+    if media_cell_col == None:
+        return (tweet_to_return, None)
+    else:
+        return (tweet_to_return, wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
             
 def _what_should_I_tweet_about():
 
