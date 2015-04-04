@@ -66,6 +66,12 @@ class TwitterBot:
                                     ('Advice', 10.0/100),
                                     ('BSLDictionary', 89.0/100)]
 
+    def refresh_google_connection(self):
+        """Simple function to refresh the google connection. """
+        self.gc = gspread.login(self.config['gspread']['username'],
+                                self.config['gspread']['password'])
+        self.config_ss = self.gc.open(config_ss_name)
+
     def _print_tweet(self, tweet, media=None):
         """Prints the tweet to stdout. """
         self.logger.info('Tweet: ' + str(tweet))
@@ -129,7 +135,7 @@ class TwitterBot:
         """Fetch tweet and media from spreadsheet. """
 
         # Refresh the connection to google sheets
-        self.gc.login()
+        self.refresh_google_connection()
         
         wks = self.config_ss.worksheet(category)
 
