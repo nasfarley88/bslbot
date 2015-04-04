@@ -29,6 +29,12 @@ def find_col_or_none(name, wks):
 class TwitterBot:
     """A class to make a twitter bot."""
 
+    def refresh_google_connection(self):
+        """Simple function to refresh the google connection. """
+        self.gc = gspread.login(self.config['gspread']['username'],
+                                self.config['gspread']['password'])
+        self.config_ss = self.gc.open(self.config_ss_name)
+    
     def __init__(self,
                  config_file=os.path.expanduser('~/.bslbot'),
                  config_ss_name="bslbot's brain",
@@ -45,9 +51,11 @@ class TwitterBot:
         self.config = ConfigObj(config_file, unrepr=True)
         self.logger.debug("Current config:\n" + str(self.config))
 
-        self.gc = gspread.login(self.config['gspread']['username'],
-                                self.config['gspread']['password'])
-        self.config_ss = self.gc.open(config_ss_name)
+        self.config_ss_name = config_ss_name
+        self.refresh_google_connection()
+        # self.gc = gspread.login(self.config['gspread']['username'],
+        #                         self.config['gspread']['password'])
+        # self.config_ss = self.gc.open(self.config_ss_name)
         
         self._tweepy_auth = tweepy.OAuthHandler(
             self.config['authentication']['consumer_key'],
@@ -66,11 +74,7 @@ class TwitterBot:
                                     ('Advice', 10.0/100),
                                     ('BSLDictionary', 89.0/100)]
 
-    def refresh_google_connection(self):
-        """Simple function to refresh the google connection. """
-        self.gc = gspread.login(self.config['gspread']['username'],
-                                self.config['gspread']['password'])
-        self.config_ss = self.gc.open(config_ss_name)
+
 
     def _print_tweet(self, tweet, media=None):
         """Prints the tweet to stdout. """
