@@ -197,8 +197,16 @@ class TwitterBot:
         chosen_tweet, chosen_media = self.choose_tweet_from_category(self._choose_category())
         self.print_or_tweet(chosen_tweet, media=chosen_media)
 
+    def auto_follow_back(self):
+        """Follow back people automatically. """
+
+        for follower in tweepy.Cursor(self._tweepy_api.followers).items():
+            if follower._json['protected'] is False:
+                follower.follow()
+        
+
 
 if __name__ == '__main__':
     bot = TwitterBot()
-    bot.print_or_tweet("Word up on the street, yo.")
+    bot.auto_follow_back()
     bot.tweet_for_self()
