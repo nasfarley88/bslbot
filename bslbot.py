@@ -128,6 +128,9 @@ class TwitterBot:
     def choose_tweet_from_category(self, category):
         """Fetch tweet and media from spreadsheet. """
 
+        # Refresh the connection to google sheets
+        self.gc.login()
+        
         wks = self.config_ss.worksheet(category)
 
         # TODO: I don't like this, fetching all the values is inefficient. 
@@ -208,5 +211,5 @@ class TwitterBot:
 
 if __name__ == '__main__':
     bot = TwitterBot()
-    bot.auto_follow_back()
+    # bot.auto_follow_back()
     bot.tweet_for_self()
