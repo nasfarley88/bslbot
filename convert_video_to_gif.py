@@ -48,7 +48,7 @@ def process_video(filename, video_height=480, overwrite=False):
 
     process = call(commands, shell=True)
 
-    if getsize(gif_name) > 5*1024**2:
+    if getsize(gif_name) > 3*1024**2-50:
         process_video(filename, video_height=video_height*0.75, overwrite=True)
 
 if __name__ == '__main__':

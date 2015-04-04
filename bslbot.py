@@ -155,6 +155,20 @@ def tweet_about_from_ss(category):
     else:
         return (tweet_to_return, wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
             
+def weighted_choice(choices):
+    """Shamelessly stolen from
+    http://stackoverflow.com/questions/3679694/a-weighted-version-of-random-choice.
+
+    """
+    total = sum(w for c, w in choices)
+    r = random.uniform(0, total)
+    upto = 0
+    for c, w in choices:
+        if upto + w > r:
+            return c
+        upto += w
+    assert False, "Shouldn't get here"
+
 def _what_should_I_tweet_about():
 
     """Internal function allowing bslbot to decide what to tweet about.
@@ -196,7 +210,9 @@ def tweet(text=None, delay=0):
 def follow_back():
     """Simple function to follow back people on twitter.
 
-    Taken shamelessly from http://www.dototot.com/write-twitter-bot-python-tweepy-follow-new-followers/
+    Taken shamelessly from
+    http://www.dototot.com/write-twitter-bot-python-tweepy-follow-new-followers/
+
     """
     for follower in tweepy.Cursor(api.followers).items():
         follower.follow()
