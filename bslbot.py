@@ -5,206 +5,200 @@ import time
 import sys
 import os
 import random
+import gspread
+import logging
 from configobj import ConfigObj
 from subprocess import call
 
-config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
 
-auth = tweepy.OAuthHandler(
-    config['authentication']['consumer_key'],
-    config['authentication']['consumer_secret'])
-auth.set_access_token(
-    config['authentication']['access_key'],
-    config['authentication']['access_secret'])
-api = tweepy.API(auth)
 
-def print_or_tweet((x, media)):
-    """Simple function that prints or tweets based on the config file."""
-    global config
 
-    print "Attempting to fetch", media
 
-    call('scp nasfarley88@nathanda.co.uk:Dropbox/vimeo_drop/gifs/'+media+' ~/tmp/', shell=True)
+def find_col_or_none(name, wks):
+    """A short function which returns None or the column cell. """
+    logger = logging.getLogger(__name__)
 
-    media = os.path.expanduser('~/tmp/'+media)
-
-    print "You have entered the print_or_tweet zone."
-    if config['misc']['printortweet'] == 'print':
-        print x, media
-    elif config['misc']['printortweet'] == 'tweet':
-        if os.path.isfile(os.path.expanduser(media)):
-            api.update_with_media(filename=media, status=x)
-        else:
-            api.update_status(status=x)
-    else:
-        print "I don't know whether to tweet or print."
-
-    call('rm '+media, shell=True)
-
-def tweet_about_from_ss(category):
-    """Function to tweet a random tweet from the spreadsheet.
-
-    The previous version of this function had the following docstring:
-
-    Function to choose a semi-random tweet from a predefined list.
-
-    This function looks at all the tweets in a category and then
-    chooses one that has not been used in a while. Specifically, it
-    chooses tweets which have been tweeted the least.
-
-    E.g. If all but 10 tweets in a category have been tweeted once,
-    and 10 have never been tweeted, this function will only choose
-    from those 10.
-
-    """
-
-    # Use the global config variable
-    global config
-    
-    import gspread
-    gc = gspread.login(config['gspread']['username'], config['gspread']['password'])
-
-    sheet = gc.open('bslbot\'s brain')
-
-    wks = sheet.worksheet(category)
-
-    # Get all the values as a list
-    wks_list = wks.get_all_values()
-
-    # Remove the title
-    #
-    # TODO replace this with finding which column corresponds to which thing
-    # (tweet, link, etc.)
-
-    # Fetch the important column indicies
-    tweet_cell_col = wks.find("Tweet").col
-    no_of_times_tweeted_cell_col = wks.find("No of times tweeted").col
-
-    # Try to find a link column, but if you don't, don't sweat it.
     try:
-        link_cell_col = wks.find("Link").col
+        x =  wks.find(name).col
+        logger.debug('Column named "' + name + "' is number " + str(x) + ".")
+        return x
     except gspread.exceptions.CellNotFound:
-        pass
+        logger.debug('Column named "' + name + "' not found.")
+        return None
+    
+class TwitterBot:
+    """A class to make a twitter bot."""
 
-    try:
-        media_cell_col = wks.find("Media").col
-    except:
-        media_cell_col = None
+    def __init__(self,
+                 config_file=os.path.expanduser('~/.bslbot'),
+                 config_ss_name="bslbot's brain",
+                 logging_level=logging.DEBUG,
+                 remote_media_dir="nasfarley88@nathanda.co.uk:Dropbox/vimeo_drop/gifs/",
+                 local_media_dir="~/tmp/",
+                 weighted_categories=None):
+        "Initiate twitter bot with appropriate config and logins."
+        
+        logging.basicConfig(level=logging_level)
+        self.logger = logging.getLogger(__name__)
 
+        self.logger.debug('Fetching config file')
+        self.config = ConfigObj(config_file, unrepr=True)
+        self.logger.debug("Current config:\n" + str(self.config))
 
-    # Remove the titles from the list of cells
-    wks_list.pop(0)
+        self.gc = gspread.login(self.config['gspread']['username'],
+                                self.config['gspread']['password'])
+        self.config_ss = self.gc.open(config_ss_name)
+        
+        self._tweepy_auth = tweepy.OAuthHandler(
+            self.config['authentication']['consumer_key'],
+            self.config['authentication']['consumer_secret'])
+        self._tweepy_auth.set_access_token(
+            self.config['authentication']['access_key'],
+            self.config['authentication']['access_secret'])
+        self._tweepy_api = tweepy.API(self._tweepy_auth)
 
-    # Set an arbitrary high number of times tweeted
-    lowest_no_of_times_tweeted = 9001
-    candidates_for_tweeting = []
-    for i in wks_list:
-        # -1 in the next line because python counts from 0, spreadsheets count
-        # from 1
-        no_of_times_tweeted = int(i[no_of_times_tweeted_cell_col-1])
-        if no_of_times_tweeted < lowest_no_of_times_tweeted:
-            # if this tweet has the lowest no_of_times_tweeted so far dump the
-            # rest of them and start the list with this one
-            print 'dumping candidates'
-            lowest_no_of_times_tweeted = no_of_times_tweeted
-            candidates_for_tweeting = [ i ]
-        elif no_of_times_tweeted == lowest_no_of_times_tweeted:
-            # otherwise if it's equally untweeted, carry on and add this one to
-            # the list
-            candidates_for_tweeting.append(i)
-        # else: do nothing
+        self.remote_media_dir = remote_media_dir
+        self.local_media_dir = local_media_dir
 
-    chosen_tweet = random.choice(candidates_for_tweeting)
+        # TODO: Add some check that the twitter api has connected correctly.
 
-    # The original function has some complex logic here to make sure that it
-    # tweets things int he correct order. The new logic does not require this
-    # (yet) as it is only for BSLDictionary entries
+        self.weighted_categories = [('SelfPromotion', 1.0/100),
+                                    ('Advice', 10.0/100),
+                                    ('BSLDictionary', 89.0/100)]
 
-    # Find the cell that holds the chosen tweet
-    cell_for_chosen_tweet = wks.find(chosen_tweet[tweet_cell_col-1])
-    print cell_for_chosen_tweet
-    print cell_for_chosen_tweet.value
+    def _print_tweet(self, tweet, media=None):
+        """Prints the tweet to stdout. """
+        self.logger.info('Tweet: ' + str(tweet))
+        self.logger.info('Media: ' + str(media))
 
-    # If there is a link defined, use it. 
-    if 'link_cell_col' in locals():
-        tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
-                          + " "\
-                          + config['misc']['signature']\
-                          + "\n"\
-                          + wks.cell(cell_for_chosen_tweet.row, link_cell_col).value
-    else:
-        tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value\
-                          + " "\
-                          + config['misc']['signature']\
+    def _tweet_tweet(self, tweet, media=None):
+        """Tweets the tweet."""
+
+        if media == None:
+            self.logger.info('Tweeting...')
+            self._tweepy_api.update_status(status=tweet)
+        else:
+            try:
+                self.logger.info('Attempting to scp ' + media)
+                scp_return = call('scp',
+                                  self.remote_media_dir+media,
+                                  self.local_media_dir,
+                                  shell=True)
+
+                assert scp_return == 0, "scp returned non-zero value: " + scp_return
+                assert os.path.isfile(os.path.expanduser(self.local_media_dir+media)),\
+                    self.local_media_dir+media + " does not exist."
+
+                self._tweepy_api.update_with_media(
+                    filename=self.local_media_dir+media,
+                    status=tweet)
+
+                self.logger.info('Attempting to rm ' + media)
+                rm_return = call('rm '+local_media, shell=True)
+                self.logger.info('rm return status: ' + rm_return)
                 
+            except AssertionError as e:
+                self.logger.warning('Caught an assertion error: ' + e)
+                self.logger.info('Tweeting without media')
+                self._tweepy_api.update_status(status=tweet)
+                
+    def print_or_tweet(self, tweet, media=None):
+        """Simple function that prints or tweets based on the config file. """
 
-    # Mark the chosen tweet as tweeted onea more time
-    print wks.cell(cell_for_chosen_tweet.row, 5)
-    print wks.cell(cell_for_chosen_tweet.row, 5).value
-    current_no_of_times_tweeeted = int( wks.cell( cell_for_chosen_tweet.row,
-                                                  no_of_times_tweeted_cell_col ).value )
+        if self.config['misc']['printortweet'] == 'print':
+            self._print_tweet(tweet, media)
+        elif self.config['misc']['printortweet'] == 'tweet':
+            self._tweet_tweet(tweet, media)
 
-    # Update the number of times tweeted
-    wks.update_cell( cell_for_chosen_tweet.row,
-                     no_of_times_tweeted_cell_col,
-                     current_no_of_times_tweeeted + 1)
-    
+    def _choose_category(self):
+        """Shamelessly stolen from
+        http://stackoverflow.com/questions/3679694/a-weighted-version-of-random-choice.
 
-    if media_cell_col == None:
-        return (tweet_to_return, None)
-    else:
-        return (tweet_to_return, wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
-            
-def _what_should_I_tweet_about():
+        """
+        total = sum(w for c, w in self.weighted_categories)
+        r = random.uniform(0, total)
+        upto = 0
+        for c, w in self.weighted_categories:
+            if upto + w > r:
+                return c
+            upto += w
+        assert False, "Shouldn't get here"
 
-    """Internal function allowing bslbot to decide what to tweet about.
+        
+    def choose_tweet_from_category(self, category):
+        """Fetch tweet and media from spreadsheet. """
 
-    Returns string."""
+        wks = self.config_ss.worksheet(category)
 
-    free_will =  random.random()
-    
-    if free_will <0.01:
-        return tweet_about_from_ss('SelfPromotion')
-    elif free_will <0.1:
-        return tweet_about_from_ss('Advice')
-    else:
-        return tweet_about_from_ss('BSLDictionary')
-    
+        # TODO: I don't like this, fetching all the values is inefficient. 
+        wks_list = wks.get_all_values()
 
-def tweet(text=None, delay=0):
-    """Function instructing bslbot to tweet.
+        tweet_cell_col = wks.find("Tweet").col
+        no_of_times_tweeted_cell_col = wks.find("No of times tweeted").col
 
-    If no arguments are given, bslbot decides what to tweet on his own."""
+        link_cell_col = find_col_or_none("Link", wks)
+        media_cell_col = find_col_or_none("Media", wks)
 
-    # bslbot should use the global config in this function.
-    global config 
+        # Remove the titles
+        wks_list.pop(0)
 
-    import time
-    time.sleep(delay)
+        lowest_no_of_times_tweeted = 9001
+        candidates_for_tweeting = []
+        for i in wks_list:
+            # -1 in the next line because python counts from 0, spreadsheets count
+            # from 1
+            no_of_times_tweeted = int(i[no_of_times_tweeted_cell_col-1])
+            if no_of_times_tweeted < lowest_no_of_times_tweeted:
+                # if this tweet has the lowest no_of_times_tweeted so far dump the
+                # rest of them and start the list with this one
+                lowest_no_of_times_tweeted = no_of_times_tweeted
+                logging.debug("lowest_no_of_times_tweeted reduced to "+str(no_of_times_tweeted))
 
-    # After sleeping for that long, bslbot needs to reload the config file just
-    # in case it's changed
-    config = ConfigObj(os.path.expanduser('~/.bslbot'), unrepr=True)
+                # Start the list again with the current tweet
+                candidates_for_tweeting = [ i ]
+            elif no_of_times_tweeted == lowest_no_of_times_tweeted:
+                # otherwise if it's equally untweeted, carry on and add this one to
+                # the list
+                candidates_for_tweeting.append(i)
 
-    
-    if text==None:
-        print_or_tweet(_what_should_I_tweet_about())
-    else:
-        print_or_tweet((text, None))
+        chosen_tweet = random.choice(candidates_for_tweeting)
+
+        cell_for_chosen_tweet = wks.find(chosen_tweet[tweet_cell_col-1])
+
+        tweet_to_return = wks.cell(cell_for_chosen_tweet.row, tweet_cell_col).value + \
+                          " " + self.config['misc']['signature']
+
+        if link_cell_col is not None:
+            tweet_to_return += "\n" + wks.cell(cell_for_chosen_tweet.row, link_cell_col).value
+
+        self.logger.debug("Cell: " + str(wks.cell(cell_for_chosen_tweet.row, 5)))
+        self.logger.debug("Cell value: " + str(wks.cell(cell_for_chosen_tweet.row, 5).value))
+
+        current_no_of_times_tweeeted = int( wks.cell( cell_for_chosen_tweet.row,
+                                                      no_of_times_tweeted_cell_col ).value )
+
+        # Update the number of times tweeted
+        wks.update_cell( cell_for_chosen_tweet.row,
+                         no_of_times_tweeted_cell_col,
+                         current_no_of_times_tweeeted + 1)
+
+        if media_cell_col == None:
+            return (tweet_to_return, None)
+        else:
+            return (tweet_to_return, 
+                    wks.cell(cell_for_chosen_tweet.row, media_cell_col).value)
+
+    def tweet_for_self(self, delay=None):
+        if delay is None:
+            delay = random.randint(1, self.config['misc']['max_delay'])
+
+        time.sleep(delay)
+        
+        chosen_tweet, chosen_media = self.choose_tweet_from_category(self._choose_category())
+        self.print_or_tweet(chosen_tweet, media=chosen_media)
 
 
-def follow_back():
-    """Simple function to follow back people on twitter.
-
-    Taken shamelessly from http://www.dototot.com/write-twitter-bot-python-tweepy-follow-new-followers/
-    """
-    for follower in tweepy.Cursor(api.followers).items():
-        follower.follow()
-        print follower.screen_name
-
-
-if __name__ == "__main__":
-    print "Starting bslbot..."
-    tweet(delay=random.randint(1,config['misc']['max_delay']))
-    time.sleep(10)
-    #follow_back()
+if __name__ == '__main__':
+    bot = TwitterBot()
+    bot.print_or_tweet("Word up on the street, yo.")
+    bot.tweet_for_self()
